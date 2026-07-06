@@ -51,3 +51,5 @@ app.listen(PORT, () => {
   console.log(`LabMaster API 服务器已启动: http://localhost:${PORT}`);
   console.log(`前端页面: http://localhost:${PORT}`);
 });
+
+module.exports = app;
