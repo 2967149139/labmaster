@@ -1,10 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "labmaster-api/server.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "labmaster-api/server.js" },
-    { "src": "/(.*)", "dest": "labmaster-ui/$1" }
-  ]
+  "outputDirectory": "labmaster-ui",
+  "cleanUrls": true,
+  "trailingSlash": false
 }
