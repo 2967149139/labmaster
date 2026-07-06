@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabMaster - 实验室管理系统</title>
+  <style>
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    :root{--primary:#4f6ef7;--primary-dark:#3b54d4;--primary-light:#eef1fe;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;--info:#3b82f6;--bg:#f1f5f9;--bg-card:#fff;--sidebar-bg:#1e293b;--sidebar-hover:#334155;--sidebar-active:#4f6ef7;--text-primary:#1e293b;--text-secondary:#64748b;--text-muted:#94a3b8;--border:#e2e8f0;--shadow-sm:0 1px 2px rgba(0,0,0,.05);--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shadow-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);--radius:8px;--radius-lg:12px;--transition:all .2s ease}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text-primary);display:flex;min-height:100vh;line-height:1.6}
+    
+    .sidebar{width:260px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s}
+    .sidebar-logo{display:flex;align-items:center;gap:12px;padding:24px 24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .sidebar-logo .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--primary),#818cf8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold}
+    .sidebar-logo .logo-text h2{font-size:18px;font-weight:700;letter-spacing:-.5px}
+    .sidebar-logo .logo-text span{font-size:11px;color:#94a3b8;font-weight:400}
+    .sidebar-nav{flex:1;padding:20px 14px;overflow-y:auto}
+    .nav-section{margin-bottom:24px}
+    .nav-section-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;padding:0 12px;margin-bottom:10px;font-weight:600}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius);cursor:pointer;transition:var(--transition);color:#cbd5e1;font-size:14px;font-weight:500;margin-bottom:2px;text-decoration:none}
+    .nav-item:hover{background:var(--sidebar-hover);color:#fff}
+    .nav-item.active{background:var(--sidebar-active);color:#fff;font-weight:600}
+    .nav-item .nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:16px}
+    .nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;min-width:22px;text-align:center}
+    .sidebar-footer{padding:16px 14px;border-top:1px solid rgba(255,255,255,.08);position:relative}
+    .sidebar-footer .user-info{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius);cursor:pointer;transition:var(--transition)}
+    .sidebar-footer .user-info:hover{background:var(--sidebar-hover)}
+    .user-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ef4444);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff}
+    .user-detail .user-name{font-size:14px;font-weight:600}.user-detail .user-role{font-size:12px;color:#94a3b8}
+    
+    .main-content{flex:1;margin-left:260px;display:flex;flex-direction:column;min-height:100vh}
+    .header{background:var(--bg-card);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm)}
+    .header-left{display:flex;align-items:center;gap:16px}
+    .menu-toggle{display:none;background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-secondary);padding:4px}
+    .breadcrumb{font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px}
+    .breadcrumb span{color:var(--text-secondary)}
+    .header-right{display:flex;align-items:center;gap:16px}
+    .header-btn{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--bg-card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-secondary);transition:var(--transition)}
+    .header-btn:hover{background:var(--bg);color:var(--text-primary)}
+    .header-btn .dot{position:absolute;top:6px;right:6px;width:8px;height:8px;background:var(--danger);border-radius:50%;border:2px solid #fff}
+    .page-content{flex:1;padding:32px;max-width:1500px;margin:0 auto;width:100%}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-bottom:28px;max-width:1300px}
+    .stat-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:24px 28px;box-shadow:var(--shadow);transition:var(--transition);cursor:pointer;border:1px solid var(--border);position:relative;overflow:hidden}
+    .stat-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+    .stat-card::after{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px}
+    .stat-card.primary::after{background:var(--primary)}.stat-card.success::after{background:var(--success)}
+    .stat-card.warning::after{background:var(--warning)}.stat-card.danger::after{background:var(--danger)}
+    .stat-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .stat-card-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
+    .stat-card.primary .stat-card-icon{background:var(--primary-light);color:var(--primary)}
+    .stat-card.success .stat-card-icon{background:#dcfce7;color:var(--success)}
+    .stat-card.warning .stat-card-icon{background:#fef3c7;color:var(--warning)}
+    .stat-card.danger .stat-card-icon{background:#fee2e2;color:var(--danger)}
+    .stat-card-value{font-size:32px;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+    .stat-card-label{font-size:14px;color:var(--text-muted)}
+    
+    .card{background:var(--bg-card);border-radius:var(--radius-lg);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:24px}
+    .card-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .card-header h3{font-size:16px;font-weight:600}
+    .card-body{padding:24px}
+    
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+    .toolbar-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .btn{padding:10px 18px;border-radius:var(--radius);font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:var(--transition);display:inline-flex;align-items:center;gap:6px}
+    .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark)}
+    .btn-success{background:var(--success);color:#fff}.btn-success:hover{opacity:.9}
+    .btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{opacity:.9}
+    .btn-outline{background:#fff;border-color:var(--border);color:var(--text-secondary)}.btn-outline:hover{background:var(--bg)}
+    .btn-sm{padding:5px 12px;font-size:13px}
+    .btn-xs{padding:2px 8px;font-size:11px}
+    .search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:20px;padding:8px 16px;border:1px solid var(--border);transition:var(--transition)}
+    .search-box input{border:none;background:transparent;outline:none;font-size:13px;width:200px;color:var(--text-primary)}
+    .search-box input::placeholder{color:var(--text-muted)}
+    select.filter-select{padding:8px 14px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;font-size:13px;color:var(--text-secondary);cursor:pointer}
+    
+    .table-wrapper{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;table-layout:fixed}
+    table th{text-align:left;font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap}
+    table td{padding:14px 16px;font-size:14px;border-bottom:1px solid var(--border);color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    table tbody tr{transition:var(--transition)}table tbody tr:hover{background:#f8fafc}
+    .actions-cell{display:flex;gap:8px}
+    
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+    .badge .bdot{width:6px;height:6px;border-radius:50%}
+    .badge-success{background:#dcfce7;color:#166534}.badge-success .bdot{background:#22c55e}
+    .badge-info{background:#dbeafe;color:#1e40af}.badge-info .bdot{background:#3b82f6}
+    .badge-warning{background:#fef3c7;color:#92400e}.badge-warning .bdot{background:#f59e0b}
+    .badge-danger{background:#fee2e2;color:#991b1b}.badge-danger .bdot{background:#ef4444}
+    .badge-primary{background:var(--primary-light);color:var(--primary-dark)}
+    .badge-secondary{background:#f1f5f9;color:#475569}
+
+    .activity-list{list-style:none}.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}.activity-item:last-child{border-bottom:none;padding-bottom:0}
+    .activity-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .activity-content{flex:1;min-width:0}.activity-content .atitle{font-size:14px;font-weight:500}.activity-content .adesc{font-size:12px;color:var(--text-muted);margin-top:2px}
+    .activity-time{font-size:12px;color:var(--text-muted);white-space:nowrap}
+
+    .content-grid{display:grid;grid-template-columns:3fr 1fr;gap:24px;margin-bottom:24px}
+    .chart-placeholder{height:180px;display:flex;align-items:flex-end;gap:16px;padding:10px 0}
+    .chart-bar{flex:1;background:linear-gradient(180deg,var(--primary),#818cf8);border-radius:6px 6px 0 0;cursor:pointer;position:relative;min-width:30px;transition:height .3s}
+    .chart-bar:hover{opacity:.8}.chart-bar .bar-val{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:600;color:var(--text-secondary)}
+    .chart-labels{display:flex;gap:16px;margin-top:10px}.chart-labels span{flex:1;text-align:center;font-size:12px;color:var(--text-muted);min-width:30px}
+    .quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;max-width:1100px}
+    .qa-btn{display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);cursor:pointer;font-size:14px;font-weight:500;color:var(--text-primary);transition:var(--transition);box-shadow:var(--shadow-sm)}
+    .qa-btn:hover{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:var(--shadow-lg)}
+
+    .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:200;justify-content:center;align-items:flex-start;padding-top:60px}
+    .modal-overlay.active{display:flex}
+    .modal{background:#fff;border-radius:var(--radius-lg);width:90%;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+    .modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-header h3{font-size:18px;font-weight:600}
+    .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);padding:4px;line-height:1}
+    .modal-body{padding:20px}
+    .modal-footer{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+    .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;color:var(--text-primary);transition:var(--transition);font-family:inherit}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+    .form-group textarea{resize:vertical;min-height:80px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+    .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 10px 25px rgba(0,0,0,.2);animation:slideDown .3s ease}
+    .toast-success{background:#166534}.toast-error{background:#991b1b}
+    @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+    
+    .loading{text-align:center;padding:40px;color:var(--text-muted)}.empty{text-align:center;padding:60px 20px;color:var(--text-muted)}.empty .empty-icon{font-size:48px;margin-bottom:12px}
+    
+    .sidebar-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99}.sidebar-overlay.active{display:block}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.info-item label{font-size:12px;color:var(--text-muted);display:block}.info-item span{font-size:14px;font-weight:500}
+
+    @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,1fr)}.quick-actions{grid-template-columns:repeat(2,1fr)}.content-grid{grid-template-columns:1fr}}
+    @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.menu-toggle{display:block}.stats-grid,.quick-actions{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+
+    /* ======== Login Page ======== */
+    #loginPage{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:linear-gradient(135deg,#1e293b 0%,#334155 50%,#1e293b 100%)}
+    #loginPage.active{display:flex;align-items:center;justify-content:center}
+    .login-container{background:#fff;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,.3);width:420px;overflow:hidden;animation:fadeInUp .5s ease}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+    .login-header{background:linear-gradient(135deg,var(--primary),#818cf8);padding:32px;text-align:center;color:#fff}
+    .login-header .login-logo{font-size:48px;margin-bottom:8px}
+    .login-header h1{font-size:24px;font-weight:700;margin-bottom:4px}
+    .login-header p{font-size:13px;opacity:.85}
+    .login-body{padding:32px}
+    .login-body .form-group{margin-bottom:20px}
+    .login-body .form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+    .login-body .form-group input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:10px;font-size:14px;color:var(--text-primary);transition:var(--transition)}
+    .login-body .form-group input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+    .login-body .btn-login{width:100%;padding:12px;background:linear-gradient(135deg,var(--primary),#818cf8);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:var(--transition)}
+    .login-body .btn-login:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(79,110,247,.4)}
+    .login-body .btn-login:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    .login-error{background:#fee2e2;color:#991b1b;padding:10px 14px;border-radius:8px;font-size:13px;text-align:center;margin-bottom:16px;display:none}
+    .login-error.show{display:block}
+
+    /* ======== User Dropdown ======== */
+    .user-dropdown{display:none;position:absolute;bottom:70px;left:16px;right:16px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,.4);z-index:150;overflow:hidden}
+    .user-dropdown.show{display:block;animation:fadeInUp .2s ease}
+    .user-dropdown-header{padding:16px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:12px}
+    .user-dropdown-header .ud-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ef4444);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff;flex-shrink:0}
+    .user-dropdown-header .ud-info{min-width:0}
+    .user-dropdown-header .ud-name{font-size:15px;font-weight:600;color:#fff}
+    .user-dropdown-header .ud-role{font-size:12px;color:#94a3b8;margin-top:2px}
+    .user-dropdown-header .ud-email{font-size:11px;color:#64748b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .user-dropdown-body{padding:8px}
+    .user-dropdown-body .ud-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#cbd5e1;font-size:13px;cursor:pointer;transition:var(--transition);background:none;border:none;width:100%;text-align:left;font-family:inherit}
+    .user-dropdown-body .ud-item:hover{background:rgba(255,255,255,.08);color:#fff}
+    .user-dropdown-body .ud-item.logout{color:#f87171}.user-dropdown-body .ud-item.logout:hover{background:rgba(239,68,68,.15)}
+
+    #appWrapper{display:none}#appWrapper.active{display:flex}
+  </style>
+</head>
+<body>
+<!-- ========== Login Page ========== -->
+<div id="loginPage" class="active">
+  <div class="login-container">
+    <div class="login-header">
+      <div class="login-logo">🧪</div>
+      <h1>LabMaster</h1>
+      <p>实验室管理系统</p>
+    </div>
+    <div class="login-body">
+      <div class="login-error" id="loginError">用户名或密码错误</div>
+      <div class="form-group">
+        <label>👤 用户名</label>
+        <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>🔒 密码</label>
+        <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+      </div>
+      <button class="btn-login" id="btnLogin" onclick="doLogin()">登 录</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Main App Wrapper ========== -->
+<div id="appWrapper">
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><div class="logo-icon">🧪</div><div class="logo-text"><h2>LabMaster</h2><span>实验室管理系统 v1.0</span></div></div>
+  <nav class="sidebar-nav">
+    <div class="nav-section"><div class="nav-section-title">主菜单</div>
+      <a class="nav-item active" data-route="dashboard"><span class="nav-icon">📊</span>工作台</a>
+      <a class="nav-item" data-route="experiments"><span class="nav-icon">🔬</span>实验管理</a>
+      <a class="nav-item" data-route="equipment"><span class="nav-icon">⚙️</span>设备管理</a>
+      <a class="nav-item" data-route="samples"><span class="nav-icon">🧫</span>样品管理</a>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">管理</div>
+      <a class="nav-item" data-route="users"><span class="nav-icon">👥</span>人员管理</a>
+      <a class="nav-item" data-route="reservations"><span class="nav-icon">📅</span>预约管理<span class="nav-badge" id="pendingBadge">3</span></a>
+      <a class="nav-item" data-route="inventory"><span class="nav-icon">📦</span>耗材库存</a>
+      <a class="nav-item" data-route="labs"><span class="nav-icon">🏛️</span>实验室管理</a>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">系统</div>
+      <a class="nav-item" data-route="settings"><span class="nav-icon">⚙️</span>系统设置</a>
+      <a class="nav-item" data-route="logs"><span class="nav-icon">📋</span>操作日志</a>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info" id="sidebarUserBtn" onclick="toggleUserDropdown()">
+      <div class="user-avatar" id="sidebarAvatar">张</div>
+      <div class="user-detail"><div class="user-name" id="sidebarName">张教授</div><div class="user-role" id="sidebarRole">管理员</div></div>
+    </div>
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-dropdown-header">
+        <div class="ud-avatar" id="udAvatar">张</div>
+        <div class="ud-info">
+          <div class="ud-name" id="udName">张教授</div>
+          <div class="ud-role" id="udRole">系统管理员</div>
+          <div class="ud-email" id="udEmail">admin@labmaster.cn</div>
+        </div>
+      </div>
+      <div class="user-dropdown-body">
+        <button class="ud-item" onclick="showUserProfile()">👤 个人信息</button>
+        <button class="ud-item" onclick="navigate('settings')">⚙️ 系统设置</button>
+        <button class="ud-item logout" onclick="doLogout()">🚪 退出登录</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="main-content">
+  <header class="header">
+    <div class="header-left"><button class="menu-toggle" id="menuToggle">☰</button><div class="breadcrumb" id="breadcrumb">🏠 <span>首页</span> / 工作台</div></div>
+    <div class="header-right"><div class="search-box"><span>🔍</span><input type="text" id="globalSearch" placeholder="全局搜索..."></div><button class="header-btn" title="通知">🔔<span class="dot"></span></button></div>
+  </header>
+  <div class="page-content" id="appContent"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal"><div class="modal-header"><h3 id="modalTitle">标题</h3><button class="modal-close" onclick="closeModal()">✕</button></div><div class="modal-body" id="modalBody"></div><div class="modal-footer" id="modalFooter"></div></div>
+</div>
+
+<script>
+// ======== API ========
+const API = 'http://localhost:3000/api';
+async function get(url){const p=url.includes('?')?'&':'?';const u=currentUser?`${p}current_user_id=${currentUser.id}&current_user_role=${currentUser.role}`:'';const r=await fetch(API+url+u);return r.json()}
+async function post(url,data){if(currentUser){data.current_user_id=currentUser.id;data.current_user_role=currentUser.role;}const r=await fetch(API+url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.json()}
+async function put(url,data){if(currentUser){data.current_user_id=currentUser.id;data.current_user_role=currentUser.role;}const r=await fetch(API+url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});return r.json()}
+async function del(url){const p=url.includes('?')?'&':'?';const u=currentUser?`${p}current_user_id=${currentUser.id}&current_user_role=${currentUser.role}`:'';const r=await fetch(API+url+u,{method:'DELETE'});return r.json()}
+
+// ======== Toast ========
+function toast(msg,type=''){const t=document.createElement('div');t.className='toast '+(type?'toast-'+type:'');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},2500)}
+
+// ======== Modal ========
+function openModal(title,body,footer){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=body;document.getElementById('modalFooter').innerHTML=footer||'';document.getElementById('modalOverlay').classList.add('active')}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal()})
+
+// ======== Router ========
+const routes={
+  dashboard:renderDashboard, equipment:renderEquipment, experiments:renderExperiments,
+  samples:renderSamples, users:renderUsers, reservations:renderReservations,
+  inventory:renderInventory, labs:renderLabs, logs:renderLogs, settings:renderSettings
+};
+
+function navigate(route){window.location.hash=route}
+function loadRoute(){const r=window.location.hash.slice(1)||'dashboard';document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.route===r));const fn=routes[r];if(fn)fn();document.getElementById('breadcrumb').innerHTML='🏠 <span>首页</span> / '+getRouteName(r)}
+function getRouteName(r){const m={dashboard:'工作台',experiments:'实验管理',equipment:'设备管理',samples:'样品管理',users:'人员管理',reservations:'预约管理',inventory:'耗材库存',labs:'实验室管理',logs:'操作日志',settings:'系统设置'};return m[r]||r}
+window.addEventListener('hashchange',loadRoute);
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',function(e){e.preventDefault();navigate(this.dataset.route);if(window.innerWidth<=768){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active')}}));
+
+document.getElementById('menuToggle').addEventListener('click',()=>{document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('active')});
+document.getElementById('sidebarOverlay').addEventListener('click',()=>{document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebarOverlay').classList.remove('active')});
+
+// ======== Helpers ========
+function statusBadge(status,type='eq'){const m={eq:{available:'可用',in_use:'使用中',maintenance:'维护中',offline:'离线'},exp:{draft:'草稿',in_progress:'进行中',completed:'已完成',cancelled:'已取消'},sample:{stored:'存储中',in_use:'使用中',used:'已用完',disposed:'已废弃'},res:{pending:'待审批',approved:'已批准',rejected:'已拒绝',cancelled:'已取消'},inv:{normal:'正常',low:'库存不足',out_of_stock:'缺货'},user:{active:'正常',inactive:'已禁用'}};const c={available:'badge-success',in_use:'badge-info',maintenance:'badge-warning',offline:'badge-danger',draft:'badge-secondary',in_progress:'badge-info',completed:'badge-success',cancelled:'badge-warning',stored:'badge-info',used:'badge-secondary',disposed:'badge-warning',pending:'badge-warning',approved:'badge-success',rejected:'badge-danger',normal:'badge-success',low:'badge-warning',out_of_stock:'badge-danger',active:'badge-success',inactive:'badge-danger'};const t=m[type]||m.eq;const t2=type==='res'?m.res:type==='exp'?m.exp:type==='sample'?m.sample:type==='inv'?m.inv:type==='user'?m.user:m.eq;return `<span class="badge ${c[status]||'badge-secondary'}"><span class="bdot"></span>${t2[status]||status}</span>`}
+function fmtDate(d){if(!d)return'-';return new Date(d).toLocaleDateString('zh-CN')}
+function fmtDateTime(d){if(!d)return'-';return new Date(d).toLocaleString('zh-CN')}
+function timeAgo(d){if(!d)return'-';const s=(Date.now()-new Date(d).getTime())/1000;if(s<60)return'刚刚';if(s<3600)return Math.floor(s/60)+'分钟前';if(s<86400)return Math.floor(s/3600)+'小时前';return Math.floor(s/86400)+'天前'}
+function formInput(label,name,val='',type='text',opts){let h=`<div class="form-group"><label>${label}</label>`;if(type==='select'){h+=`<select name="${name}">`;if(opts)opts.forEach(o=>h+=`<option value="${o.v}" ${val==o.v?'selected':''}>${o.t}</option>`);h+='</select>'}else if(type==='textarea'){h+=`<textarea name="${name}">${val||''}</textarea>`}else{h+=`<input type="${type}" name="${name}" value="${val||''}">`}h+='</div>';return h}
+function formData(container){const d={};container.querySelectorAll('[name]').forEach(el=>{d[el.name]=el.value});return d}
+
+// ======== DASHBOARD ========
+async function renderDashboard(){
+  const app=document.getElementById('appContent');
+  app.innerHTML='<div class="loading">加载中...</div>';
+  try{
+    const s=await get('/dashboard/stats');
+    const colors=['primary','success','warning','danger'];
+    const icons=[['🔬',s.expCount],['⚙️',s.eqCount],['🧫',s.sampleCount],['👥',s.userCount]];
+    app.innerHTML=`
+      <div class="stats-grid">${icons.map(([ic,v],i)=>`<div class="stat-card ${colors[i]}" onclick="navigate('${['experiments','equipment','samples','users'][i]}')"><div class="stat-card-header"><div class="stat-card-icon">${ic}</div></div><div class="stat-card-value">${v||0}</div><div class="stat-card-label">${['进行中实验','设备总数','样品总数','实验室人员'][i]}</div></div>`).join('')}</div>
+      <div class="quick-actions">
+        <button class="qa-btn" onclick="showCreateModal('experiments')"><span>➕</span>新建实验</button>
+        <button class="qa-btn" onclick="showCreateModal('reservations')"><span>📅</span>预约设备</button>
+        <button class="qa-btn" onclick="showCreateModal('samples')"><span>📝</span>登记样品</button>
+        <button class="qa-btn" onclick="navigate('equipment')"><span>⚙️</span>设备管理</button>
+      </div>
+      <div class="content-grid">
+        <div class="card"><div class="card-header"><h3>📋 设备状态概览</h3><span class="btn btn-sm btn-outline" onclick="navigate('equipment')">查看全部 →</span></div><div class="card-body"><div class="table-wrapper"><table><thead><tr><th>编号</th><th>名称</th><th>型号</th><th>状态</th></tr></thead><tbody id="dashEqTable"><tr><td colspan="4" class="loading">加载中...</td></tr></tbody></table></div></div></div>
+        <div class="card"><div class="card-header"><h3>🕐 最近动态</h3></div><div class="card-body"><ul class="activity-list" id="dashActivity"><li class="loading">加载中...</li></ul></div></div>
+      </div>
+      <div class="card"><div class="card-header"><h3>📊 本周设备使用统计</h3></div><div class="card-body"><div class="chart-placeholder" id="weeklyChart"></div><div class="chart-labels"><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span></div></div></div>`;
+    loadDashboardData(s);
+  }catch(e){app.innerHTML='<div class="empty"><div class="empty-icon">❌</div><p>加载失败: '+e.message+'</p></div>'}
+}
+async function loadDashboardData(s){
+  get('/equipment').then(eqs=>{const t=document.getElementById('dashEqTable');if(t)t.innerHTML=eqs.slice(0,5).map(e=>`<tr><td>${e.eq_code}</td><td><strong>${e.name}</strong></td><td>${e.model||'-'}</td><td>${statusBadge(e.status,'eq')}</td></tr>`).join('')});
+  if(s.recentLogs){const a=document.getElementById('dashActivity');if(a){const icons={system:'⚙️',experiments:'🔬',equipment:'⚙️',samples:'🧫',reservations:'📅',inventory:'📦',users:'👥'};a.innerHTML=s.recentLogs.slice(0,8).map(l=>`<li class="activity-item"><div class="activity-ico" style="background:#dbeafe;color:#3b82f6">${icons[l.module]||'📋'}</div><div class="activity-content"><div class="atitle">${l.real_name||'系统'} ${l.action}</div><div class="adesc">${l.detail||''}</div></div><span class="activity-time">${timeAgo(l.created_at)}</span></li>`).join('')||'<li class="empty">暂无动态</li>'}}
+  const chart=document.getElementById('weeklyChart');if(chart){const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];const vals=days.map(d=>{const f=s.weeklyUsage?.find(w=>w.day===d);return f?f.cnt:Math.floor(Math.random()*15+3)});const max=Math.max(...vals,1);chart.innerHTML=vals.map(v=>`<div class="chart-bar" style="height:${(v/max*100).toFixed(0)}%"><span class="bar-val">${v}</span></div>`).join('')}}
+
+// ======== EQUIPMENT ========
+async function renderEquipment(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>⚙️ 设备管理</h3><button class="btn btn-primary" onclick="showCreateModal('equipment')">➕ 添加设备</button></div><div class="card-body"><div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="eqSearch" placeholder="搜索设备..." oninput="renderEquipmentTable()"></div><select class="filter-select" id="eqStatusFilter" onchange="renderEquipmentTable()"><option value="">全部状态</option><option value="available">可用</option><option value="in_use">使用中</option><option value="maintenance">维护中</option><option value="offline">离线</option></select></div><div class="table-wrapper"><table><thead><tr><th>编号</th><th>名称</th><th>型号</th><th>分类</th><th>所属实验室</th><th>价格</th><th>状态</th><th>操作</th></tr></thead><tbody id="eqTableBody"><tr><td colspan="8" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderEquipmentTable()}
+async function renderEquipmentTable(){const t=document.getElementById('eqTableBody');if(!t)return;const s=document.getElementById('eqSearch')?.value||'';const st=document.getElementById('eqStatusFilter')?.value||'';try{const eqs=await get(`/equipment?search=${encodeURIComponent(s)}&status=${st}`);t.innerHTML=eqs.map(e=>`<tr><td>${e.eq_code}</td><td><strong>${e.name}</strong></td><td>${e.model||'-'}</td><td>${e.category||'-'}</td><td>${e.lab_name||'-'}</td><td>${e.price?'¥'+Number(e.price).toLocaleString():'-'}</td><td>${statusBadge(e.status,'eq')}</td><td class="actions-cell"><button class="btn btn-sm btn-outline" onclick="editEquipment(${e.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteItem('equipment',${e.id})">🗑️</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">暂无设备</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="8" class="empty">加载失败</td></tr>'}}
+
+async function showCreateModal(type){
+  if(type==='equipment'){const labs=await get('/labs');const opts=labs.map(l=>({v:l.id,t:l.name}));const body=`<div class="form-row">${formInput('设备编号','eq_code','EQ-'+Date.now().toString(36).toUpperCase())}${formInput('设备名称','name')}</div><div class="form-row">${formInput('型号','model')}${formInput('分类','category')}</div><div class="form-row">${formInput('所属实验室','lab_id','','select',[{v:'',t:'请选择'},...opts])}${formInput('采购日期','purchase_date','','date')}</div><div class="form-row">${formInput('价格(元)','price','','number')}${formInput('供应商','supplier')}</div>${formInput('描述','description','','textarea')}`;
+    openModal('添加设备',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveEquipment()">保存</button>`)}
+
+  if(type==='experiments'){const labs=await get('/labs');const users=await get('/users');const eqs=await get('/equipment?status=available');openModal('新建实验',
+    `<div class="form-row">${formInput('实验编号','exp_code','EXP-'+Date.now().toString(36).toUpperCase())}${formInput('实验标题','title')}</div><div class="form-row">${formInput('分类','category')}${formInput('状态','status','draft','select',[{v:'draft',t:'草稿'},{v:'in_progress',t:'进行中'},{v:'completed',t:'已完成'},{v:'cancelled',t:'已取消'}])}</div><div class="form-row">${formInput('所属实验室','lab_id','','select',[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))])}${formInput('负责人','leader_id','','select',[{v:'',t:'请选择'},...users.map(u=>({v:u.id,t:u.real_name}))])}</div><div class="form-row">${formInput('开始日期','start_date','','date')}${formInput('结束日期','end_date','','date')}</div>${formInput('描述','description','','textarea')}`,
+    `<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveExperiment()">保存</button>`)}
+
+  if(type==='samples'){const labs=await get('/labs');const exps=await get('/experiments');openModal('登记样品',
+    `<div class="form-row">${formInput('样品编号','sample_code','S-'+Date.now().toString(36).toUpperCase())}${formInput('样品名称','name')}</div><div class="form-row">${formInput('分类','category')}${formInput('数量','quantity','1','number')}</div><div class="form-row">${formInput('单位','unit','份')}${formInput('保存条件','storage_condition')}</div><div class="form-row">${formInput('存放位置','storage_location')}${formInput('所属实验室','lab_id','','select',[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))])}</div><div class="form-row">${formInput('关联实验','experiment_id','','select',[{v:'',t:'无'},...exps.map(e=>({v:e.id,t:e.title}))])}${formInput('接收日期','received_date','','date')}</div><div class="form-row">${formInput('过期日期','expiry_date','','date')}${formInput('状态','status','stored','select',[{v:'stored',t:'存储中'},{v:'in_use',t:'使用中'}])}</div>${formInput('描述','description','','textarea')}`,
+    `<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSample()">保存</button>`)}
+
+  if(type==='users'){openModal('添加人员',
+    `<div class="form-row">${formInput('用户名','username')}${formInput('密码','password','123456')}</div><div class="form-row">${formInput('姓名','real_name')}${formInput('角色','role','researcher','select',[{v:'admin',t:'管理员'},{v:'researcher',t:'研究员'},{v:'technician',t:'技术员'},{v:'viewer',t:'观察员'}])}</div><div class="form-row">${formInput('邮箱','email','','email')}${formInput('电话','phone')}</div>${formInput('部门','department')}`,
+    `<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveUser()">保存</button>`)}
+
+  if(type==='reservations'){const users=await get('/users');const eqs=await get('/equipment');openModal('预约设备',
+    `<div class="form-row">${formInput('预约标题','title')}${formInput('预约人','user_id','','select',[{v:'',t:'请选择'},...users.map(u=>({v:u.id,t:u.real_name}))])}</div><div class="form-row">${formInput('设备','equipment_id','','select',[{v:'',t:'请选择'},...eqs.map(e=>({v:e.id,t:e.name}))])}${formInput('关联实验','experiment_id','','select',[{v:'',t:'无'}])}</div><div class="form-row">${formInput('开始时间','start_time','','datetime-local')}${formInput('结束时间','end_time','','datetime-local')}</div>${formInput('用途','purpose','','textarea')}`,
+    `<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveReservation()">保存</button>`)}
+
+  if(type==='inventory'){const labs=await get('/labs');openModal('添加耗材',
+    `<div class="form-row">${formInput('物品编号','item_code','INV-'+Date.now().toString(36).toUpperCase())}${formInput('物品名称','name')}</div><div class="form-row">${formInput('分类','category')}${formInput('单位','unit','个')}</div><div class="form-row">${formInput('初始数量','quantity','0','number')}${formInput('最低库存','min_stock','10','number')}</div><div class="form-row">${formInput('存放位置','storage_location')}${formInput('所属实验室','lab_id','','select',[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))])}</div><div class="form-row">${formInput('供应商','supplier')}${formInput('单价','price','','number')}</div>${formInput('描述','description','','textarea')}`,
+    `<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveInventory()">保存</button>`)}
+
+  if(type==='labs'){const users=await get('/users');openModal('添加实验室',
+    `<div class="form-row">${formInput('实验室名称','name')}${formInput('位置','location')}</div><div class="form-row">${formInput('负责人','manager_id','','select',[{v:'',t:'请选择'},...users.map(u=>({v:u.id,t:u.real_name}))])}${formInput('面积(㎡)','area','','number')}</div>${formInput('描述','description','','textarea')}`,
+    `<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveLab()">保存</button>`)}
+}
+
+// ======== SAVE HANDLERS ========
+async function saveEquipment(){const d=formData(document.getElementById('modalBody'));if(!d.name)return toast('请输入设备名称','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/equipment/'+id,d);toast('设备更新成功','success')}else{await post('/equipment',d);toast('设备添加成功','success')}closeModal();renderEquipmentTable()}
+async function editEquipment(id){const e=await get('/equipment/'+id);const labs=await get('/labs');const opts=[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))];const body=`<div class="form-row">${formInput('设备编号','eq_code',e.eq_code)}${formInput('设备名称','name',e.name)}</div><div class="form-row">${formInput('型号','model',e.model)}${formInput('分类','category',e.category)}</div><div class="form-row">${formInput('所属实验室','lab_id',e.lab_id,'select',opts)}${formInput('状态','status',e.status,'select',[{v:'available',t:'可用'},{v:'in_use',t:'使用中'},{v:'maintenance',t:'维护中'},{v:'offline',t:'离线'}])}</div><div class="form-row">${formInput('采购日期','purchase_date',e.purchase_date?e.purchase_date.slice(0,10):'','date')}${formInput('价格(元)','price',e.price,'number')}</div><div class="form-row">${formInput('供应商','supplier',e.supplier)}</div>${formInput('描述','description',e.description,'textarea')}`;body.dataset={};document.getElementById('modalBody').dataset.editId=id;openModal('编辑设备',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveEquipment()">保存</button>`)}
+
+async function saveExperiment(){const d=formData(document.getElementById('modalBody'));if(!d.title)return toast('请输入实验标题','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/experiments/'+id,d);toast('实验更新成功','success')}else{await post('/experiments',d);toast('实验创建成功','success')}closeModal();renderExperiments()}
+async function saveSample(){const d=formData(document.getElementById('modalBody'));if(!d.name)return toast('请输入样品名称','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/samples/'+id,d);toast('样品更新成功','success')}else{await post('/samples',d);toast('样品登记成功','success')}closeModal();renderSamples()}
+async function saveUser(){const d=formData(document.getElementById('modalBody'));if(!d.username)return toast('请输入用户名','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/users/'+id,d);toast('用户更新成功','success')}else{await post('/users',d);toast('用户添加成功','success')}closeModal();renderUsers()}
+async function saveReservation(){const d=formData(document.getElementById('modalBody'));if(!d.title)return toast('请输入预约标题','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/reservations/'+id,d);toast('预约更新成功','success')}else{await post('/reservations',d);toast('预约创建成功','success')}closeModal();renderReservations()}
+async function saveInventory(){const d=formData(document.getElementById('modalBody'));if(!d.name)return toast('请输入物品名称','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/inventory/'+id,d);toast('耗材更新成功','success')}else{await post('/inventory',d);toast('耗材添加成功','success')}closeModal();renderInventory()}
+async function saveLab(){const d=formData(document.getElementById('modalBody'));if(!d.name)return toast('请输入实验室名称','error');const id=document.getElementById('modalBody').dataset.editId;if(id){await put('/labs/'+id,d);toast('实验室更新成功','success')}else{await post('/labs',d);toast('实验室添加成功','success')}closeModal();renderLabs()}
+
+async function deleteItem(type,id){if(!confirm('确认删除？此操作不可撤销。'))return;await del('/'+type+'/'+id);toast('删除成功','success');const r={equipment:renderEquipment,experiments:renderExperiments,samples:renderSamples,users:renderUsers,reservations:renderReservations,inventory:renderInventory,labs:renderLabs};if(r[type])r[type]()}
+
+// ======== EXPERIMENTS ========
+async function renderExperiments(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>🔬 实验管理</h3><button class="btn btn-primary" onclick="showCreateModal('experiments')">➕ 新建实验</button></div><div class="card-body"><div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="expSearch" placeholder="搜索实验..." oninput="renderExpTable()"></div><select class="filter-select" id="expStatusFilter" onchange="renderExpTable()"><option value="">全部状态</option><option value="draft">草稿</option><option value="in_progress">进行中</option><option value="completed">已完成</option><option value="cancelled">已取消</option></select></div><div class="table-wrapper"><table><thead><tr><th>编号</th><th>标题</th><th>分类</th><th>负责人</th><th>实验室</th><th>开始</th><th>结束</th><th>状态</th><th>操作</th></tr></thead><tbody id="expTableBody"><tr><td colspan="9" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderExpTable()}
+async function renderExpTable(){const t=document.getElementById('expTableBody');if(!t)return;const s=document.getElementById('expSearch')?.value||'';const st=document.getElementById('expStatusFilter')?.value||'';try{const exps=await get(`/experiments?search=${encodeURIComponent(s)}&status=${st}`);t.innerHTML=exps.map(e=>`<tr><td>${e.exp_code}</td><td><strong>${e.title}</strong></td><td>${e.category||'-'}</td><td>${e.leader_name||'-'}</td><td>${e.lab_name||'-'}</td><td>${fmtDate(e.start_date)}</td><td>${fmtDate(e.end_date)}</td><td>${statusBadge(e.status,'exp')}</td><td class="actions-cell"><button class="btn btn-sm btn-outline" onclick="editExperiment(${e.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteItem('experiments',${e.id})">🗑️</button></td></tr>`).join('')||'<tr><td colspan="9" class="empty">暂无实验</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="9" class="empty">加载失败</td></tr>'}}
+async function editExperiment(id){const e=await get('/experiments/'+id);const labs=await get('/labs');const users=await get('/users');const body=`<div class="form-row">${formInput('实验编号','exp_code',e.exp_code)}${formInput('实验标题','title',e.title)}</div><div class="form-row">${formInput('分类','category',e.category)}${formInput('状态','status',e.status,'select',[{v:'draft',t:'草稿'},{v:'in_progress',t:'进行中'},{v:'completed',t:'已完成'},{v:'cancelled',t:'已取消'}])}</div><div class="form-row">${formInput('所属实验室','lab_id',e.lab_id,'select',[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))])}${formInput('负责人','leader_id',e.leader_id,'select',[{v:'',t:'请选择'},...users.map(u=>({v:u.id,t:u.real_name}))])}</div><div class="form-row">${formInput('开始日期','start_date',e.start_date?e.start_date.slice(0,10):'','date')}${formInput('结束日期','end_date',e.end_date?e.end_date.slice(0,10):'','date')}</div>${formInput('描述','description',e.description,'textarea')}${formInput('实验结论','result',e.result,'textarea')}`;document.getElementById('modalBody').dataset.editId=id;openModal('编辑实验',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveExperiment()">保存</button>`)}
+
+// ======== SAMPLES ========
+async function renderSamples(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>🧫 样品管理</h3><button class="btn btn-primary" onclick="showCreateModal('samples')">➕ 登记样品</button></div><div class="card-body"><div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="smpSearch" placeholder="搜索样品..." oninput="renderSmpTable()"></div><select class="filter-select" id="smpStatusFilter" onchange="renderSmpTable()"><option value="">全部状态</option><option value="stored">存储中</option><option value="in_use">使用中</option><option value="used">已用完</option><option value="disposed">已废弃</option></select></div><div class="table-wrapper"><table><thead><tr><th>编号</th><th>名称</th><th>分类</th><th>数量</th><th>存放位置</th><th>过期日期</th><th>状态</th><th>操作</th></tr></thead><tbody id="smpTableBody"><tr><td colspan="8" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderSmpTable()}
+async function renderSmpTable(){const t=document.getElementById('smpTableBody');if(!t)return;const s=document.getElementById('smpSearch')?.value||'';const st=document.getElementById('smpStatusFilter')?.value||'';try{const smp=await get(`/samples?search=${encodeURIComponent(s)}&status=${st}`);t.innerHTML=smp.map(p=>`<tr><td>${p.sample_code}</td><td><strong>${p.name}</strong></td><td>${p.category||'-'}</td><td>${p.quantity}${p.unit||''}</td><td>${p.storage_location||'-'}</td><td>${fmtDate(p.expiry_date)}</td><td>${statusBadge(p.status,'sample')}</td><td class="actions-cell"><button class="btn btn-sm btn-outline" onclick="editSample(${p.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteItem('samples',${p.id})">🗑️</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">暂无样品</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="8" class="empty">加载失败</td></tr>'}}
+async function editSample(id){const p=await get('/samples/'+id);const labs=await get('/labs');const body=`<div class="form-row">${formInput('样品编号','sample_code',p.sample_code)}${formInput('样品名称','name',p.name)}</div><div class="form-row">${formInput('分类','category',p.category)}${formInput('数量','quantity',p.quantity,'number')}</div><div class="form-row">${formInput('单位','unit',p.unit)}${formInput('保存条件','storage_condition',p.storage_condition)}</div><div class="form-row">${formInput('存放位置','storage_location',p.storage_location)}${formInput('所属实验室','lab_id',p.lab_id,'select',[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))])}</div><div class="form-row">${formInput('接收日期','received_date',p.received_date?p.received_date.slice(0,10):'','date')}${formInput('过期日期','expiry_date',p.expiry_date?p.expiry_date.slice(0,10):'','date')}</div><div class="form-row">${formInput('状态','status',p.status,'select',[{v:'stored',t:'存储中'},{v:'in_use',t:'使用中'},{v:'used',t:'已用完'},{v:'disposed',t:'已废弃'}])}</div>${formInput('描述','description',p.description,'textarea')}`;document.getElementById('modalBody').dataset.editId=id;openModal('编辑样品',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSample()">保存</button>`)}
+
+// ======== USERS ========
+async function renderUsers(){const app=document.getElementById('appContent');const isAdmin=currentUser&&currentUser.role==='admin';app.innerHTML=`<div class="card"><div class="card-header"><h3>👥 人员管理</h3>${isAdmin?'<button class="btn btn-primary" onclick="showCreateModal(\'users\')">➕ 添加人员</button>':''}</div><div class="card-body"><div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="userSearch" placeholder="搜索人员..." oninput="renderUserTable()"></div>${isAdmin?'<select class="filter-select" id="userRoleFilter" onchange="renderUserTable()"><option value="">全部角色</option><option value="admin">管理员</option><option value="researcher">研究员</option><option value="technician">技术员</option><option value="viewer">观察员</option></select>':''}</div><div class="table-wrapper"><table><thead><tr><th>姓名</th><th>用户名</th><th>角色</th><th>邮箱</th><th>电话</th><th>部门</th><th>状态</th><th>操作</th></tr></thead><tbody id="userTableBody"><tr><td colspan="8" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderUserTable()}
+async function renderUserTable(){const t=document.getElementById('userTableBody');if(!t)return;const s=document.getElementById('userSearch')?.value||'';const r=document.getElementById('userRoleFilter')?.value||'';const isAdmin=currentUser&&currentUser.role==='admin';try{const users=await get(`/users?search=${encodeURIComponent(s)}&role=${r}`);t.innerHTML=users.map(u=>`<tr><td><strong>${u.real_name}</strong></td><td>${u.username}</td><td>${u.role==='admin'?'管理员':u.role==='researcher'?'研究员':u.role==='technician'?'技术员':'观察员'}</td><td>${u.email||'-'}</td><td>${u.phone||'-'}</td><td>${u.department||'-'}</td><td>${statusBadge(u.status,'user')}</td><td class="actions-cell"><button class="btn btn-sm btn-outline" onclick="editUser(${u.id})">✏️</button>${isAdmin?`<button class="btn btn-sm btn-danger" onclick="deleteItem('users',${u.id})">🗑️</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8" class="empty">暂无人员</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="8" class="empty">加载失败</td></tr>'}}
+async function editUser(id){const u=await get('/users/'+id);const isAdmin=currentUser&&currentUser.role==='admin';const rText=u.role==='admin'?'管理员':u.role==='researcher'?'研究员':u.role==='technician'?'技术员':'观察员';const body=`<div class="form-row">${formInput('用户名','username',u.username)}${isAdmin?formInput('密码 (留空不修改)','password',''):''}</div><div class="form-row">${formInput('姓名','real_name',u.real_name)}${isAdmin?formInput('角色','role',u.role,'select',[{v:'admin',t:'管理员'},{v:'researcher',t:'研究员'},{v:'technician',t:'技术员'},{v:'viewer',t:'观察员'}]):`<div class="form-group"><label>角色</label><span style="padding:8px 0;display:block;font-size:14px;font-weight:500">${rText}</span></div>`}</div><div class="form-row">${formInput('邮箱','email',u.email,'email')}${formInput('电话','phone',u.phone)}</div><div class="form-row">${formInput('部门','department',u.department)}${isAdmin?formInput('状态','status',u.status,'select',[{v:'active',t:'正常'},{v:'inactive',t:'已禁用'}]):''}</div>`;document.getElementById('modalBody').dataset.editId=id;openModal('编辑用户',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveUser()">保存</button>`)}
+
+// ======== RESERVATIONS ========
+async function renderReservations(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>📅 预约管理</h3><button class="btn btn-primary" onclick="showCreateModal('reservations')">➕ 新建预约</button></div><div class="card-body"><div class="toolbar"><select class="filter-select" id="resStatusFilter" onchange="renderResTable()"><option value="">全部状态</option><option value="pending">待审批</option><option value="approved">已批准</option><option value="rejected">已拒绝</option><option value="cancelled">已取消</option></select></div><div class="table-wrapper"><table><thead><tr><th>标题</th><th>预约人</th><th>设备</th><th>开始时间</th><th>结束时间</th><th>状态</th><th>操作</th></tr></thead><tbody id="resTableBody"><tr><td colspan="7" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderResTable()}
+async function renderResTable(){const t=document.getElementById('resTableBody');if(!t)return;const st=document.getElementById('resStatusFilter')?.value||'';try{const res=await get(`/reservations?status=${st}`);t.innerHTML=res.map(r=>`<tr><td><strong>${r.title}</strong></td><td>${r.user_name||'-'}</td><td>${r.equipment_name||'-'}</td><td>${fmtDateTime(r.start_time)}</td><td>${fmtDateTime(r.end_time)}</td><td>${statusBadge(r.status,'res')}</td><td class="actions-cell">${r.status==='pending'?`<button class="btn btn-xs btn-success" onclick="approveRes(${r.id})">✓</button><button class="btn btn-xs btn-danger" onclick="rejectRes(${r.id})">✕</button>`:''}<button class="btn btn-xs btn-danger" onclick="deleteItem('reservations',${r.id})">🗑️</button></td></tr>`).join('')||'<tr><td colspan="7" class="empty">暂无预约</td></tr>';const badge=document.getElementById('pendingBadge');if(badge){const p=res.filter(r=>r.status==='pending').length;badge.textContent=p||'';badge.style.display=p?'':'none'}}catch(e){t.innerHTML='<tr><td colspan="7" class="empty">加载失败</td></tr>'}}
+async function approveRes(id){await fetch(API+'/reservations/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'approved'})});toast('已批准','success');renderResTable()}
+async function rejectRes(id){await fetch(API+'/reservations/'+id+'/status',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'rejected'})});toast('已拒绝','success');renderResTable()}
+
+// ======== INVENTORY ========
+async function renderInventory(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>📦 耗材库存</h3><button class="btn btn-primary" onclick="showCreateModal('inventory')">➕ 添加耗材</button></div><div class="card-body"><div class="toolbar"><div class="search-box"><span>🔍</span><input type="text" id="invSearch" placeholder="搜索耗材..." oninput="renderInvTable()"></div><select class="filter-select" id="invStatusFilter" onchange="renderInvTable()"><option value="">全部状态</option><option value="normal">正常</option><option value="low">库存不足</option><option value="out_of_stock">缺货</option></select></div><div class="table-wrapper"><table><thead><tr><th>编号</th><th>名称</th><th>分类</th><th>数量</th><th>最低库存</th><th>存放位置</th><th>状态</th><th>操作</th></tr></thead><tbody id="invTableBody"><tr><td colspan="8" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderInvTable()}
+async function renderInvTable(){const t=document.getElementById('invTableBody');if(!t)return;const s=document.getElementById('invSearch')?.value||'';const st=document.getElementById('invStatusFilter')?.value||'';try{const inv=await get(`/inventory?search=${encodeURIComponent(s)}&status=${st}`);t.innerHTML=inv.map(i=>`<tr><td>${i.item_code}</td><td><strong>${i.name}</strong></td><td>${i.category||'-'}</td><td>${i.quantity}${i.unit||''}</td><td>${i.min_stock}${i.unit||''}</td><td>${i.storage_location||'-'}</td><td>${statusBadge(i.status,'inv')}</td><td class="actions-cell"><button class="btn btn-xs btn-success" onclick="stockInOut(${i.id},'in')">📥入库</button><button class="btn btn-xs btn-warning" style="background:#fef3c7;color:#92400e" onclick="stockInOut(${i.id},'out')">📤出库</button><button class="btn btn-xs btn-outline" onclick="editInventory(${i.id})">✏️</button><button class="btn btn-xs btn-danger" onclick="deleteItem('inventory',${i.id})">🗑️</button></td></tr>`).join('')||'<tr><td colspan="8" class="empty">暂无耗材</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="8" class="empty">加载失败</td></tr>'}}
+function stockInOut(id,type){const title=type==='in'?'入库':'出库';openModal(title,`<div class="form-group"><label>数量</label><input type="number" id="stockQty" value="1" min="1"></div><div class="form-group"><label>备注</label><input type="text" id="stockRemark"></div>`,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="doStock(${id},'${type}')">确认${title}</button>`)}
+async function doStock(id,type){const qty=parseInt(document.getElementById('stockQty').value);const remark=document.getElementById('stockRemark').value;if(!qty||qty<1)return toast('请输入有效数量','error');const r=await post('/inventory/'+id+'/record',{type,quantity:qty,operator_id:currentUser.id,remark});if(r.error)return toast(r.error,'error');toast((type==='in'?'入库':'出库')+'成功','success');closeModal();renderInvTable()}
+async function editInventory(id){const i=await get('/inventory/'+id);const labs=await get('/labs');const body=`<div class="form-row">${formInput('物品编号','item_code',i.item_code)}${formInput('物品名称','name',i.name)}</div><div class="form-row">${formInput('分类','category',i.category)}${formInput('单位','unit',i.unit)}</div><div class="form-row">${formInput('当前数量','quantity',i.quantity,'number')}${formInput('最低库存','min_stock',i.min_stock,'number')}</div><div class="form-row">${formInput('存放位置','storage_location',i.storage_location)}${formInput('所属实验室','lab_id',i.lab_id,'select',[{v:'',t:'请选择'},...labs.map(l=>({v:l.id,t:l.name}))])}</div><div class="form-row">${formInput('供应商','supplier',i.supplier)}${formInput('单价','price',i.price,'number')}</div>${formInput('描述','description',i.description,'textarea')}`;document.getElementById('modalBody').dataset.editId=id;openModal('编辑耗材',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveInventory()">保存</button>`)}
+
+// ======== LABS ========
+async function renderLabs(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>🏛️ 实验室管理</h3><button class="btn btn-primary" onclick="showCreateModal('labs')">➕ 添加实验室</button></div><div class="card-body"><div class="table-wrapper"><table><thead><tr><th>名称</th><th>位置</th><th>负责人</th><th>面积</th><th>描述</th><th>操作</th></tr></thead><tbody id="labTableBody"><tr><td colspan="6" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderLabTable()}
+async function renderLabTable(){const t=document.getElementById('labTableBody');if(!t)return;try{const labs=await get('/labs');t.innerHTML=labs.map(l=>`<tr><td><strong>${l.name}</strong></td><td>${l.location||'-'}</td><td>${l.manager_name||'-'}</td><td>${l.area?l.area+'㎡':'-'}</td><td>${l.description||'-'}</td><td class="actions-cell"><button class="btn btn-sm btn-outline" onclick="editLab(${l.id})">✏️</button><button class="btn btn-sm btn-danger" onclick="deleteItem('labs',${l.id})">🗑️</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">暂无实验室</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="6" class="empty">加载失败</td></tr>'}}
+async function editLab(id){const l=await get('/labs/'+id);const users=await get('/users');const body=`<div class="form-row">${formInput('名称','name',l.name)}${formInput('位置','location',l.location)}</div><div class="form-row">${formInput('负责人','manager_id',l.manager_id,'select',[{v:'',t:'请选择'},...users.map(u=>({v:u.id,t:u.real_name}))])}${formInput('面积(㎡)','area',l.area,'number')}</div>${formInput('描述','description',l.description,'textarea')}`;document.getElementById('modalBody').dataset.editId=id;openModal('编辑实验室',body,`<button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveLab()">保存</button>`)}
+
+// ======== LOGS ========
+async function renderLogs(){const app=document.getElementById('appContent');app.innerHTML=`<div class="card"><div class="card-header"><h3>📋 操作日志</h3></div><div class="card-body"><div class="toolbar"><select class="filter-select" id="logModuleFilter" onchange="renderLogTable()"><option value="">全部模块</option><option value="system">系统</option><option value="experiments">实验</option><option value="equipment">设备</option><option value="samples">样品</option><option value="users">用户</option><option value="reservations">预约</option><option value="inventory">库存</option></select></div><div class="table-wrapper"><table><thead><tr><th>时间</th><th>用户</th><th>操作</th><th>模块</th><th>详情</th></tr></thead><tbody id="logTableBody"><tr><td colspan="5" class="loading">加载中...</td></tr></tbody></table></div></div></div>`;renderLogTable()}
+async function renderLogTable(){const t=document.getElementById('logTableBody');if(!t)return;const m=document.getElementById('logModuleFilter')?.value||'';try{const logs=await get(`/logs?module=${m}&limit=200`);t.innerHTML=logs.map(l=>`<tr><td>${fmtDateTime(l.created_at)}</td><td>${l.real_name||'系统'}</td><td>${l.action}</td><td>${l.module||'-'}</td><td>${l.detail||'-'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">暂无日志</td></tr>'}catch(e){t.innerHTML='<tr><td colspan="5" class="empty">加载失败</td></tr>'}}
+
+// ======== SETTINGS ========
+async function renderSettings(){const app=document.getElementById('appContent');try{const s=await get('/settings');app.innerHTML=`<div class="card"><div class="card-header"><h3>⚙️ 系统设置</h3></div><div class="card-body"><div class="info-grid"><div class="info-item"><label>系统名称</label><span>${s.system_name||'LabMaster'}</span></div><div class="info-item"><label>系统版本</label><span>${s.system_version||'1.0.0'}</span></div><div class="info-item"><label>维护模式</label><span>${s.maintenance_mode==='true'?'🔴 开启':'🟢 关闭'}</span></div><div class="info-item"><label>最大预约天数</label><span>${s.reservation_max_days||'30'} 天</span></div></div></div></div>
+      <div class="card"><div class="card-header"><h3>🛢️ 数据库信息</h3></div><div class="card-body"><div class="info-grid"><div class="info-item"><label>数据库引擎</label><span>MySQL</span></div><div class="info-item"><label>数据库名</label><span>test_ai</span></div><div class="info-item"><label>主机</label><span>localhost:3306</span></div><div class="info-item"><label>连接状态</label><span style="color:var(--success)">✅ 正常</span></div></div></div></div>`}catch(e){app.innerHTML='<div class="empty"><p>加载设置失败</p></div>'}}
+
+// ======== AUTH: Login / Logout ========
+let currentUser=null;
+
+async function doLogin(){
+  const username=document.getElementById('loginUsername').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  if(!username||!password)return toast('请输入用户名和密码','error');
+  const btn=document.getElementById('btnLogin');
+  btn.disabled=true;btn.textContent='登录中...';
+  try{
+    const r=await post('/auth/login',{username,password});
+    if(r.error){document.getElementById('loginError').classList.add('show');document.getElementById('loginError').textContent=r.error;btn.disabled=false;btn.textContent='登 录';return}
+    currentUser=r.user;
+    sessionStorage.setItem('labmaster_user',JSON.stringify(r.user));
+    updateSidebarUser(r.user);
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('appWrapper').classList.add('active');
+    loadRoute();
+  }catch(e){
+    document.getElementById('loginError').classList.add('show');
+    document.getElementById('loginError').textContent='服务器连接失败';
+    btn.disabled=false;btn.textContent='登 录';
+  }
+}
+
+function doLogout(){
+  currentUser=null;
+  sessionStorage.removeItem('labmaster_user');
+  document.getElementById('appWrapper').classList.remove('active');
+  document.getElementById('loginPage').classList.add('active');
+  document.getElementById('loginUsername').value='';
+  document.getElementById('loginPassword').value='';
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('userDropdown').classList.remove('show');
+  document.getElementById('appContent').innerHTML='';
+  document.getElementById('btnLogin').disabled=false;
+  document.getElementById('btnLogin').textContent='登 录';
+  window.location.hash='';
+}
+
+function updateSidebarUser(user){
+  document.getElementById('sidebarAvatar').textContent=user.real_name.charAt(0);
+  document.getElementById('sidebarName').textContent=user.real_name;
+  document.getElementById('sidebarRole').textContent=user.role==='admin'?'系统管理员':user.role==='researcher'?'研究员':user.role==='technician'?'技术员':'观察员';
+  document.getElementById('udAvatar').textContent=user.real_name.charAt(0);
+  document.getElementById('udName').textContent=user.real_name;
+  document.getElementById('udRole').textContent=user.role==='admin'?'系统管理员':user.role==='researcher'?'研究员':user.role==='technician'?'技术员':'观察员';
+  document.getElementById('udEmail').textContent=user.email||'未设置邮箱';
+}
+
+function toggleUserDropdown(){
+  document.getElementById('userDropdown').classList.toggle('show');
+  // 关闭其他dropdown
+  document.getElementById('loginError').classList.remove('show');
+}
+
+function showUserProfile(){
+  document.getElementById('userDropdown').classList.remove('show');
+  if(!currentUser)return;
+  const roles={admin:'系统管理员',researcher:'研究员',technician:'技术员',viewer:'观察员'};
+  openModal('个人信息',
+    `<div style="text-align:center;padding:10px 0 20px"><div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ef4444);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;margin-bottom:12px">${currentUser.real_name.charAt(0)}</div><h3>${currentUser.real_name}</h3><p style="color:var(--text-muted);font-size:13px">${roles[currentUser.role]||currentUser.role}</p></div>
+    <div class="info-grid"><div class="info-item"><label>用户名</label><span>${currentUser.username}</span></div><div class="info-item"><label>角色</label><span>${roles[currentUser.role]||currentUser.role}</span></div><div class="info-item"><label>邮箱</label><span>${currentUser.email||'-'}</span></div><div class="info-item"><label>电话</label><span>${currentUser.phone||'-'}</span></div><div class="info-item"><label>部门</label><span>${currentUser.department||'-'}</span></div></div>`,
+    `<button class="btn btn-outline" onclick="closeModal()">关闭</button>`
+  );
+}
+
+// 点击其他地方关闭 dropdown
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('userDropdown');
+  const btn=document.getElementById('sidebarUserBtn');
+  if(dd.classList.contains('show')&&!dd.contains(e.target)&&!btn.contains(e.target)){
+    dd.classList.remove('show');
+  }
+});
+
+// 登录页面回车登录
+document.getElementById('loginPassword').addEventListener('keydown',function(e){
+  if(e.key==='Enter')doLogin();
+});
+document.getElementById('loginUsername').addEventListener('keydown',function(e){
+  if(e.key==='Enter')document.getElementById('loginPassword').focus();
+});
+
+// ======== Init ========
+// 检查是否已登录
+(function(){
+  const saved=sessionStorage.getItem('labmaster_user');
+  if(saved){
+    try{
+      currentUser=JSON.parse(saved);
+      updateSidebarUser(currentUser);
+      document.getElementById('loginPage').classList.remove('active');
+      document.getElementById('appWrapper').classList.add('active');
+    }catch(e){}
+  }
+})();
+loadRoute();
+</script>
+</div><!-- end appWrapper -->
+</body>
+</html>
