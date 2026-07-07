@@ -13,6 +13,7 @@ const labRoutes = require('./routes/labs');
 const logRoutes = require('./routes/logs');
 const settingsRoutes = require('./routes/settings');
 const authRoutes = require('./routes/auth');
+const departmentRoutes = require('./routes/departments');
 
 const app = express();
 const PORT = 3000;
@@ -27,6 +28,7 @@ app.use(express.static(path.join(__dirname, '..', 'labmaster-ui')));
 
 // API 路由
 app.use('/api/auth', authRoutes);
+app.use('/api/departments', departmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/equipment', equipmentRoutes);
 app.use('/api/experiments', experimentRoutes);
