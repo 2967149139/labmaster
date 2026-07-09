@@ -5,7 +5,7 @@ const pool = require('../db');
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT l.*, u.real_name as manager_name FROM labs l LEFT JOIN users u ON l.manager_id = u.id ORDER BY l.name`);
+      `SELECT l.*, u.real_name as manager_name FROM labs l LEFT JOIN users u ON l.manager_id = u.id ORDER BY l.created_at DESC`);
     res.json(rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
