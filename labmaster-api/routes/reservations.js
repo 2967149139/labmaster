@@ -4,17 +4,21 @@ const pool = require('../db');
 
 router.get('/', async (req, res) => {
   try {
-    const { status, user_id, equipment_id } = req.query;
-    let sql = `SELECT r.*, u.real_name as user_name, e.name as equipment_name, e.eq_code as equipment_code
-      FROM reservations r LEFT JOIN users u ON r.user_id = u.id 
-      LEFT JOIN equipment e ON r.equipment_id = e.id WHERE 1=1`;
+    const { status, user_id, equipment_id, page, pageSize } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.max(1, Math.min(100, parseInt(pageSize) || 10));
+    let whereSQL = ' WHERE 1=1';
     const params = [];
-    if (status) { sql += ' AND r.status = ?'; params.push(status); }
-    if (user_id) { sql += ' AND r.user_id = ?'; params.push(user_id); }
-    if (equipment_id) { sql += ' AND r.equipment_id = ?'; params.push(equipment_id); }
-    sql += ' ORDER BY r.start_time DESC';
-    const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    if (status) { const vals = Array.isArray(status) ? status : status.split(',').filter(v => v); if (vals.length === 1) { whereSQL += ' AND r.status = ?'; params.push(vals[0]); } else if (vals.length > 1) { whereSQL += ` AND r.status IN (${vals.map(() => '?').join(',')})`; params.push(...vals); } }
+    if (user_id) { whereSQL += ' AND r.user_id = ?'; params.push(user_id); }
+    if (equipment_id) { whereSQL += ' AND r.equipment_id = ?'; params.push(equipment_id); }
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM reservations r LEFT JOIN users u ON r.user_id = u.id LEFT JOIN equipment e ON r.equipment_id = e.id${whereSQL}`, params);
+    const total = countRows[0].total;
+    const dataSQL = `SELECT r.*, u.real_name as user_name, e.name as equipment_name, e.eq_code as equipment_code
+      FROM reservations r LEFT JOIN users u ON r.user_id = u.id 
+      LEFT JOIN equipment e ON r.equipment_id = e.id${whereSQL} ORDER BY r.created_at DESC LIMIT ?, ?`;
+    const [rows] = await pool.query(dataSQL, [...params, (pageNum - 1) * pageSizeNum, pageSizeNum]);
+    res.json({ data: rows, total, page: pageNum, pageSize: pageSizeNum, totalPages: Math.ceil(total / pageSizeNum) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
