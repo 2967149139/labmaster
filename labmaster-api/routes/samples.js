@@ -4,16 +4,20 @@ const pool = require('../db');
 
 router.get('/', async (req, res) => {
   try {
-    const { status, search } = req.query;
-    let sql = `SELECT s.*, l.name as lab_name, e.title as experiment_title 
-      FROM samples s LEFT JOIN labs l ON s.lab_id = l.id 
-      LEFT JOIN experiments e ON s.experiment_id = e.id WHERE 1=1`;
+    const { status, search, page, pageSize } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.max(1, Math.min(100, parseInt(pageSize) || 10));
+    let whereSQL = ' WHERE 1=1';
     const params = [];
-    if (status) { sql += ' AND s.status = ?'; params.push(status); }
-    if (search) { sql += ' AND (s.name LIKE ? OR s.sample_code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-    sql += ' ORDER BY s.created_at DESC';
-    const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    if (status) { const vals = Array.isArray(status) ? status : status.split(',').filter(v => v); if (vals.length === 1) { whereSQL += ' AND s.status = ?'; params.push(vals[0]); } else if (vals.length > 1) { whereSQL += ` AND s.status IN (${vals.map(() => '?').join(',')})`; params.push(...vals); } }
+    if (search) { whereSQL += ' AND (s.name LIKE ? OR s.sample_code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM samples s LEFT JOIN labs l ON s.lab_id = l.id LEFT JOIN experiments e ON s.experiment_id = e.id${whereSQL}`, params);
+    const total = countRows[0].total;
+    const dataSQL = `SELECT s.*, l.name as lab_name, e.title as experiment_title 
+      FROM samples s LEFT JOIN labs l ON s.lab_id = l.id 
+      LEFT JOIN experiments e ON s.experiment_id = e.id${whereSQL} ORDER BY s.created_at DESC LIMIT ?, ?`;
+    const [rows] = await pool.query(dataSQL, [...params, (pageNum - 1) * pageSizeNum, pageSizeNum]);
+    res.json({ data: rows, total, page: pageNum, pageSize: pageSizeNum, totalPages: Math.ceil(total / pageSizeNum) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
