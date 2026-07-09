@@ -16,10 +16,13 @@ const authRoutes = require('./routes/auth');
 const departmentRoutes = require('./routes/departments');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // 中间件
-app.use(cors());
+app.use(cors({
+  origin: ['https://labmaster-xi.vercel.app', 'http://localhost:5500', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
