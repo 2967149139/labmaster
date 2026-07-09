@@ -4,14 +4,18 @@ const pool = require('../db');
 
 router.get('/', async (req, res) => {
   try {
-    const { status, search } = req.query;
-    let sql = `SELECT i.*, l.name as lab_name FROM inventory i LEFT JOIN labs l ON i.lab_id = l.id WHERE 1=1`;
+    const { status, search, page, pageSize } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.max(1, Math.min(100, parseInt(pageSize) || 10));
+    let whereSQL = ' WHERE 1=1';
     const params = [];
-    if (status) { sql += ' AND i.status = ?'; params.push(status); }
-    if (search) { sql += ' AND (i.name LIKE ? OR i.item_code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-    sql += ' ORDER BY i.status ASC, i.created_at DESC';
-    const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    if (status) { const vals = Array.isArray(status) ? status : status.split(',').filter(v => v); if (vals.length === 1) { whereSQL += ' AND i.status = ?'; params.push(vals[0]); } else if (vals.length > 1) { whereSQL += ` AND i.status IN (${vals.map(() => '?').join(',')})`; params.push(...vals); } }
+    if (search) { whereSQL += ' AND (i.name LIKE ? OR i.item_code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM inventory i LEFT JOIN labs l ON i.lab_id = l.id${whereSQL}`, params);
+    const total = countRows[0].total;
+    const dataSQL = `SELECT i.*, l.name as lab_name FROM inventory i LEFT JOIN labs l ON i.lab_id = l.id${whereSQL} ORDER BY i.created_at DESC LIMIT ?, ?`;
+    const [rows] = await pool.query(dataSQL, [...params, (pageNum - 1) * pageSizeNum, pageSizeNum]);
+    res.json({ data: rows, total, page: pageNum, pageSize: pageSizeNum, totalPages: Math.ceil(total / pageSizeNum) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
