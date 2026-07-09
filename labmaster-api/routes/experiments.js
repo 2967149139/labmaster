@@ -4,16 +4,20 @@ const pool = require('../db');
 
 router.get('/', async (req, res) => {
   try {
-    const { status, search } = req.query;
-    let sql = `SELECT e.*, l.name as lab_name, u.real_name as leader_name 
-      FROM experiments e LEFT JOIN labs l ON e.lab_id = l.id 
-      LEFT JOIN users u ON e.leader_id = u.id WHERE 1=1`;
+    const { status, search, page, pageSize } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.max(1, Math.min(100, parseInt(pageSize) || 10));
+    let whereSQL = ' WHERE 1=1';
     const params = [];
-    if (status) { sql += ' AND e.status = ?'; params.push(status); }
-    if (search) { sql += ' AND (e.title LIKE ? OR e.exp_code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
-    sql += ' ORDER BY e.created_at DESC';
-    const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    if (status) { const vals = Array.isArray(status) ? status : status.split(',').filter(v => v); if (vals.length === 1) { whereSQL += ' AND e.status = ?'; params.push(vals[0]); } else if (vals.length > 1) { whereSQL += ` AND e.status IN (${vals.map(() => '?').join(',')})`; params.push(...vals); } }
+    if (search) { whereSQL += ' AND (e.title LIKE ? OR e.exp_code LIKE ?)'; params.push(`%${search}%`, `%${search}%`); }
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM experiments e LEFT JOIN labs l ON e.lab_id = l.id LEFT JOIN users u ON e.leader_id = u.id${whereSQL}`, params);
+    const total = countRows[0].total;
+    const dataSQL = `SELECT e.*, l.name as lab_name, u.real_name as leader_name 
+      FROM experiments e LEFT JOIN labs l ON e.lab_id = l.id 
+      LEFT JOIN users u ON e.leader_id = u.id${whereSQL} ORDER BY e.created_at DESC LIMIT ?, ?`;
+    const [rows] = await pool.query(dataSQL, [...params, (pageNum - 1) * pageSizeNum, pageSizeNum]);
+    res.json({ data: rows, total, page: pageNum, pageSize: pageSizeNum, totalPages: Math.ceil(total / pageSizeNum) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
