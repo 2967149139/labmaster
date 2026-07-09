@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
       sql += ' AND id = ?';
       params.push(current_user_id || 0);
     }
-    if (role) { sql += ' AND role = ?'; params.push(role); }
+    if (role) { const vals = Array.isArray(role) ? role : role.split(',').filter(v => v); if (vals.length === 1) { sql += ' AND role = ?'; params.push(vals[0]); } else if (vals.length > 1) { sql += ` AND role IN (${vals.map(() => '?').join(',')})`; params.push(...vals); } }
     if (search) { sql += ' AND (real_name LIKE ? OR username LIKE ? OR department LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
     sql += ' ORDER BY created_at DESC';
     const [rows] = await pool.query(sql, params);
