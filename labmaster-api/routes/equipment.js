@@ -5,15 +5,19 @@ const pool = require('../db');
 // 获取设备列表
 router.get('/', async (req, res) => {
   try {
-    const { status, lab_id, search } = req.query;
-    let sql = `SELECT e.*, l.name as lab_name FROM equipment e LEFT JOIN labs l ON e.lab_id = l.id WHERE 1=1`;
+    const { status, lab_id, search, page, pageSize } = req.query;
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const pageSizeNum = Math.max(1, Math.min(100, parseInt(pageSize) || 10));
+    let whereSQL = ' WHERE 1=1';
     const params = [];
-    if (status) { sql += ' AND e.status = ?'; params.push(status); }
-    if (lab_id) { sql += ' AND e.lab_id = ?'; params.push(lab_id); }
-    if (search) { sql += ' AND (e.name LIKE ? OR e.eq_code LIKE ? OR e.model LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
-    sql += ' ORDER BY e.created_at DESC';
-    const [rows] = await pool.query(sql, params);
-    res.json(rows);
+    if (status) { const vals = Array.isArray(status) ? status : status.split(',').filter(v => v); if (vals.length === 1) { whereSQL += ' AND e.status = ?'; params.push(vals[0]); } else if (vals.length > 1) { whereSQL += ` AND e.status IN (${vals.map(() => '?').join(',')})`; params.push(...vals); } }
+    if (lab_id) { whereSQL += ' AND e.lab_id = ?'; params.push(lab_id); }
+    if (search) { whereSQL += ' AND (e.name LIKE ? OR e.eq_code LIKE ? OR e.model LIKE ?)'; params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
+    const [countRows] = await pool.query(`SELECT COUNT(*) as total FROM equipment e LEFT JOIN labs l ON e.lab_id = l.id${whereSQL}`, params);
+    const total = countRows[0].total;
+    const dataSQL = `SELECT e.*, l.name as lab_name FROM equipment e LEFT JOIN labs l ON e.lab_id = l.id${whereSQL} ORDER BY e.created_at DESC LIMIT ?, ?`;
+    const [rows] = await pool.query(dataSQL, [...params, (pageNum - 1) * pageSizeNum, pageSizeNum]);
+    res.json({ data: rows, total, page: pageNum, pageSize: pageSizeNum, totalPages: Math.ceil(total / pageSizeNum) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
