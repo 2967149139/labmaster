@@ -1,6 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
+
+// CORS 配置：支持环境变量动态设置允许的域名
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+  : ['http://localhost:5500', 'http://localhost:3000'];
 
 const dashboardRoutes = require('./routes/dashboard');
 const equipmentRoutes = require('./routes/equipment');
@@ -20,7 +26,7 @@ const PORT = process.env.PORT || 3000;
 
 // 中间件
 app.use(cors({
-  origin: ['https://labmaster-xi.vercel.app', 'http://localhost:5500', 'http://localhost:3000'],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());
